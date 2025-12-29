@@ -83,6 +83,42 @@ export interface PermissionCheckResponseMetadata {
   checkCount: number;
 }
 
+/** BULK CHECK */
+export interface PermissionBulkCheckRequestItem {
+  /** Entity on which the permission needs to be checked, required. */
+  entity:
+    | Entity
+    | undefined;
+  /** Name of the permission or relation, required, must start with a letter and can include alphanumeric and underscore, max 64 bytes. */
+  permission: string;
+  /** Subject for which the permission needs to be checked, required. */
+  subject: Subject | undefined;
+}
+
+/** PermissionBulkCheckRequest is the request message for the BulkCheck method in the Permission service. */
+export interface PermissionBulkCheckRequest {
+  /** Identifier of the tenant, required, and must match the pattern "[a-zA-Z0-9-,]+", max 64 bytes. */
+  tenantId: string;
+  /** Metadata associated with this request, required. */
+  metadata:
+    | PermissionCheckRequestMetadata
+    | undefined;
+  /** List of permission check requests, maximum 100 items. */
+  items: PermissionBulkCheckRequestItem[];
+  /** Context associated with this request. */
+  context:
+    | Context
+    | undefined;
+  /** Additional arguments associated with this request. */
+  arguments: Argument[];
+}
+
+/** PermissionBulkCheckResponse is the response message for the BulkCheck method in the Permission service. */
+export interface PermissionBulkCheckResponse {
+  /** List of permission check responses corresponding to each request. */
+  results: PermissionCheckResponse[];
+}
+
 /** PermissionExpandRequest is the request message for the Expand method in the Permission service. */
 export interface PermissionExpandRequest {
   /** Identifier of the tenant, required, and must match the pattern "[a-zA-Z0-9-,]+", max 64 bytes. */
@@ -1182,6 +1218,296 @@ export const PermissionCheckResponseMetadata: MessageFns<PermissionCheckResponse
   fromPartial(object: DeepPartial<PermissionCheckResponseMetadata>): PermissionCheckResponseMetadata {
     const message = createBasePermissionCheckResponseMetadata();
     message.checkCount = object.checkCount ?? 0;
+    return message;
+  },
+};
+
+function createBasePermissionBulkCheckRequestItem(): PermissionBulkCheckRequestItem {
+  return { entity: undefined, permission: "", subject: undefined };
+}
+
+export const PermissionBulkCheckRequestItem: MessageFns<PermissionBulkCheckRequestItem> = {
+  encode(message: PermissionBulkCheckRequestItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.entity !== undefined) {
+      Entity.encode(message.entity, writer.uint32(10).fork()).join();
+    }
+    if (message.permission !== "") {
+      writer.uint32(18).string(message.permission);
+    }
+    if (message.subject !== undefined) {
+      Subject.encode(message.subject, writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PermissionBulkCheckRequestItem {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePermissionBulkCheckRequestItem();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.entity = Entity.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.permission = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.subject = Subject.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PermissionBulkCheckRequestItem {
+    return {
+      entity: isSet(object.entity) ? Entity.fromJSON(object.entity) : undefined,
+      permission: isSet(object.permission) ? globalThis.String(object.permission) : "",
+      subject: isSet(object.subject) ? Subject.fromJSON(object.subject) : undefined,
+    };
+  },
+
+  toJSON(message: PermissionBulkCheckRequestItem): unknown {
+    const obj: any = {};
+    if (message.entity !== undefined) {
+      obj.entity = Entity.toJSON(message.entity);
+    }
+    if (message.permission !== "") {
+      obj.permission = message.permission;
+    }
+    if (message.subject !== undefined) {
+      obj.subject = Subject.toJSON(message.subject);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PermissionBulkCheckRequestItem>): PermissionBulkCheckRequestItem {
+    return PermissionBulkCheckRequestItem.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PermissionBulkCheckRequestItem>): PermissionBulkCheckRequestItem {
+    const message = createBasePermissionBulkCheckRequestItem();
+    message.entity = (object.entity !== undefined && object.entity !== null)
+      ? Entity.fromPartial(object.entity)
+      : undefined;
+    message.permission = object.permission ?? "";
+    message.subject = (object.subject !== undefined && object.subject !== null)
+      ? Subject.fromPartial(object.subject)
+      : undefined;
+    return message;
+  },
+};
+
+function createBasePermissionBulkCheckRequest(): PermissionBulkCheckRequest {
+  return { tenantId: "", metadata: undefined, items: [], context: undefined, arguments: [] };
+}
+
+export const PermissionBulkCheckRequest: MessageFns<PermissionBulkCheckRequest> = {
+  encode(message: PermissionBulkCheckRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.tenantId !== "") {
+      writer.uint32(10).string(message.tenantId);
+    }
+    if (message.metadata !== undefined) {
+      PermissionCheckRequestMetadata.encode(message.metadata, writer.uint32(18).fork()).join();
+    }
+    for (const v of message.items) {
+      PermissionBulkCheckRequestItem.encode(v!, writer.uint32(26).fork()).join();
+    }
+    if (message.context !== undefined) {
+      Context.encode(message.context, writer.uint32(34).fork()).join();
+    }
+    for (const v of message.arguments) {
+      Argument.encode(v!, writer.uint32(42).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PermissionBulkCheckRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePermissionBulkCheckRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.tenantId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.metadata = PermissionCheckRequestMetadata.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.items.push(PermissionBulkCheckRequestItem.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.context = Context.decode(reader, reader.uint32());
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.arguments.push(Argument.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PermissionBulkCheckRequest {
+    return {
+      tenantId: isSet(object.tenant_id) ? globalThis.String(object.tenant_id) : "",
+      metadata: isSet(object.metadata) ? PermissionCheckRequestMetadata.fromJSON(object.metadata) : undefined,
+      items: globalThis.Array.isArray(object?.items)
+        ? object.items.map((e: any) => PermissionBulkCheckRequestItem.fromJSON(e))
+        : [],
+      context: isSet(object.context) ? Context.fromJSON(object.context) : undefined,
+      arguments: globalThis.Array.isArray(object?.arguments)
+        ? object.arguments.map((e: any) => Argument.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PermissionBulkCheckRequest): unknown {
+    const obj: any = {};
+    if (message.tenantId !== "") {
+      obj.tenant_id = message.tenantId;
+    }
+    if (message.metadata !== undefined) {
+      obj.metadata = PermissionCheckRequestMetadata.toJSON(message.metadata);
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => PermissionBulkCheckRequestItem.toJSON(e));
+    }
+    if (message.context !== undefined) {
+      obj.context = Context.toJSON(message.context);
+    }
+    if (message.arguments?.length) {
+      obj.arguments = message.arguments.map((e) => Argument.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PermissionBulkCheckRequest>): PermissionBulkCheckRequest {
+    return PermissionBulkCheckRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PermissionBulkCheckRequest>): PermissionBulkCheckRequest {
+    const message = createBasePermissionBulkCheckRequest();
+    message.tenantId = object.tenantId ?? "";
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? PermissionCheckRequestMetadata.fromPartial(object.metadata)
+      : undefined;
+    message.items = object.items?.map((e) => PermissionBulkCheckRequestItem.fromPartial(e)) || [];
+    message.context = (object.context !== undefined && object.context !== null)
+      ? Context.fromPartial(object.context)
+      : undefined;
+    message.arguments = object.arguments?.map((e) => Argument.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePermissionBulkCheckResponse(): PermissionBulkCheckResponse {
+  return { results: [] };
+}
+
+export const PermissionBulkCheckResponse: MessageFns<PermissionBulkCheckResponse> = {
+  encode(message: PermissionBulkCheckResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.results) {
+      PermissionCheckResponse.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PermissionBulkCheckResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePermissionBulkCheckResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.results.push(PermissionCheckResponse.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PermissionBulkCheckResponse {
+    return {
+      results: globalThis.Array.isArray(object?.results)
+        ? object.results.map((e: any) => PermissionCheckResponse.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PermissionBulkCheckResponse): unknown {
+    const obj: any = {};
+    if (message.results?.length) {
+      obj.results = message.results.map((e) => PermissionCheckResponse.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PermissionBulkCheckResponse>): PermissionBulkCheckResponse {
+    return PermissionBulkCheckResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PermissionBulkCheckResponse>): PermissionBulkCheckResponse {
+    const message = createBasePermissionBulkCheckResponse();
+    message.results = object.results?.map((e) => PermissionCheckResponse.fromPartial(e)) || [];
     return message;
   },
 };
@@ -6520,7 +6846,10 @@ export const TenantListResponse: MessageFns<TenantListResponse> = {
   },
 };
 
-/** Permission service contains methods to interact with permissions. */
+/**
+ * * PERMISSION SERVICE **
+ * Permission service contains methods to interact with permissions.
+ */
 export type PermissionDefinition = typeof PermissionDefinition;
 export const PermissionDefinition = {
   name: "Permission",
@@ -8183,6 +8512,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               46,
+              58,
+              1,
+              42,
               34,
               41,
               47,
@@ -8226,9 +8558,215 @@ export const PermissionDefinition = {
               101,
               99,
               107,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * BulkCheck method receives a PermissionBulkCheckRequest containing multiple check requests
+     * and returns a PermissionBulkCheckResponse with results for each request.
+     * Maximum 100 requests can be processed in a single bulk operation.
+     */
+    bulkCheck: {
+      name: "BulkCheck",
+      requestType: PermissionBulkCheckRequest,
+      requestStream: false,
+      responseType: PermissionBulkCheckResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8338: [
+            Buffer.from([
+              131,
+              1,
+              10,
+              10,
+              80,
+              101,
+              114,
+              109,
+              105,
+              115,
+              115,
+              105,
+              111,
+              110,
+              18,
+              14,
+              98,
+              117,
+              108,
+              107,
+              32,
+              99,
+              104,
+              101,
+              99,
+              107,
+              32,
+              97,
+              112,
+              105,
+              26,
+              77,
+              67,
+              104,
+              101,
+              99,
+              107,
+              32,
+              109,
+              117,
+              108,
+              116,
+              105,
+              112,
+              108,
+              101,
+              32,
+              112,
+              101,
+              114,
+              109,
+              105,
+              115,
+              115,
+              105,
+              111,
+              110,
+              115,
+              32,
+              105,
+              110,
+              32,
+              97,
+              32,
+              115,
+              105,
+              110,
+              103,
+              108,
+              101,
+              32,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              46,
+              32,
+              77,
+              97,
+              120,
+              105,
+              109,
+              117,
+              109,
+              32,
+              49,
+              48,
+              48,
+              32,
+              114,
+              101,
+              113,
+              117,
+              101,
+              115,
+              116,
+              115,
+              32,
+              97,
+              108,
+              108,
+              111,
+              119,
+              101,
+              100,
+              46,
+              42,
+              22,
+              112,
+              101,
+              114,
+              109,
+              105,
+              115,
+              115,
+              105,
+              111,
+              110,
+              115,
+              46,
+              98,
+              117,
+              108,
+              107,
+              45,
+              99,
+              104,
+              101,
+              99,
+              107,
+            ]),
+          ],
+          578365826: [
+            Buffer.from([
+              51,
               58,
               1,
               42,
+              34,
+              46,
+              47,
+              118,
+              49,
+              47,
+              116,
+              101,
+              110,
+              97,
+              110,
+              116,
+              115,
+              47,
+              123,
+              116,
+              101,
+              110,
+              97,
+              110,
+              116,
+              95,
+              105,
+              100,
+              125,
+              47,
+              112,
+              101,
+              114,
+              109,
+              105,
+              115,
+              115,
+              105,
+              111,
+              110,
+              115,
+              47,
+              98,
+              117,
+              108,
+              107,
+              45,
+              99,
+              104,
+              101,
+              99,
+              107,
             ]),
           ],
         },
@@ -9322,6 +9860,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               47,
+              58,
+              1,
+              42,
               34,
               42,
               47,
@@ -9366,9 +9907,6 @@ export const PermissionDefinition = {
               97,
               110,
               100,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -10819,6 +11357,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               54,
+              58,
+              1,
+              42,
               34,
               49,
               47,
@@ -10870,9 +11411,6 @@ export const PermissionDefinition = {
               105,
               116,
               121,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -12460,6 +12998,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               61,
+              58,
+              1,
+              42,
               34,
               56,
               47,
@@ -12518,9 +13059,6 @@ export const PermissionDefinition = {
               101,
               97,
               109,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -14144,6 +14682,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               55,
+              58,
+              1,
+              42,
               34,
               50,
               47,
@@ -14196,9 +14737,6 @@ export const PermissionDefinition = {
               101,
               99,
               116,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -15695,6 +16233,9 @@ export const PermissionDefinition = {
           578365826: [
             Buffer.from([
               59,
+              58,
+              1,
+              42,
               34,
               54,
               47,
@@ -15751,9 +16292,6 @@ export const PermissionDefinition = {
               105,
               111,
               110,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -15772,6 +16310,15 @@ export interface PermissionServiceImplementation<CallContextExt = {}> {
     request: PermissionCheckRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<PermissionCheckResponse>>;
+  /**
+   * BulkCheck method receives a PermissionBulkCheckRequest containing multiple check requests
+   * and returns a PermissionBulkCheckResponse with results for each request.
+   * Maximum 100 requests can be processed in a single bulk operation.
+   */
+  bulkCheck(
+    request: PermissionBulkCheckRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<PermissionBulkCheckResponse>>;
   /**
    * Expand method receives a PermissionExpandRequest and returns a PermissionExpandResponse.
    * It expands relationships according to the schema provided.
@@ -15824,6 +16371,15 @@ export interface PermissionClient<CallOptionsExt = {}> {
     request: DeepPartial<PermissionCheckRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<PermissionCheckResponse>;
+  /**
+   * BulkCheck method receives a PermissionBulkCheckRequest containing multiple check requests
+   * and returns a PermissionBulkCheckResponse with results for each request.
+   * Maximum 100 requests can be processed in a single bulk operation.
+   */
+  bulkCheck(
+    request: DeepPartial<PermissionBulkCheckRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<PermissionBulkCheckResponse>;
   /**
    * Expand method receives a PermissionExpandRequest and returns a PermissionExpandResponse.
    * It expands relationships according to the schema provided.
@@ -16808,6 +17364,9 @@ export const WatchDefinition = {
           578365826: [
             Buffer.from([
               34,
+              58,
+              1,
+              42,
               34,
               29,
               47,
@@ -16839,9 +17398,6 @@ export const WatchDefinition = {
               116,
               99,
               104,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -18895,6 +19451,9 @@ export const SchemaDefinition = {
           578365826: [
             Buffer.from([
               42,
+              58,
+              1,
+              42,
               34,
               37,
               47,
@@ -18934,9 +19493,6 @@ export const SchemaDefinition = {
               105,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -19033,6 +19589,9 @@ export const SchemaDefinition = {
           578365826: [
             Buffer.from([
               50,
+              58,
+              1,
+              42,
               50,
               45,
               47,
@@ -19080,9 +19639,6 @@ export const SchemaDefinition = {
               105,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -19873,6 +20429,9 @@ export const SchemaDefinition = {
           578365826: [
             Buffer.from([
               41,
+              58,
+              1,
+              42,
               34,
               36,
               47,
@@ -19911,9 +20470,6 @@ export const SchemaDefinition = {
               101,
               97,
               100,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -20574,6 +21130,9 @@ export const SchemaDefinition = {
           578365826: [
             Buffer.from([
               41,
+              58,
+              1,
+              42,
               34,
               36,
               47,
@@ -20612,9 +21171,6 @@ export const SchemaDefinition = {
               105,
               115,
               116,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -23303,6 +23859,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               39,
+              58,
+              1,
+              42,
               34,
               34,
               47,
@@ -23339,9 +23898,6 @@ export const DataDefinition = {
               105,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -23412,6 +23968,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               48,
+              58,
+              1,
+              42,
               34,
               43,
               47,
@@ -23457,9 +24016,6 @@ export const DataDefinition = {
               105,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -24947,6 +25503,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               52,
+              58,
+              1,
+              42,
               34,
               47,
               47,
@@ -24996,9 +25555,6 @@ export const DataDefinition = {
               101,
               97,
               100,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -26253,6 +26809,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               49,
+              58,
+              1,
+              42,
               34,
               44,
               47,
@@ -26299,9 +26858,6 @@ export const DataDefinition = {
               101,
               97,
               100,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -27784,6 +28340,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               40,
+              58,
+              1,
+              42,
               34,
               35,
               47,
@@ -27821,9 +28380,6 @@ export const DataDefinition = {
               101,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -27896,6 +28452,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               49,
+              58,
+              1,
+              42,
               34,
               44,
               47,
@@ -27942,9 +28501,6 @@ export const DataDefinition = {
               101,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -28913,6 +29469,9 @@ export const DataDefinition = {
           578365826: [
             Buffer.from([
               44,
+              58,
+              1,
+              42,
               34,
               39,
               47,
@@ -28954,9 +29513,6 @@ export const DataDefinition = {
               100,
               108,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -31614,6 +32170,9 @@ export const BundleDefinition = {
           578365826: [
             Buffer.from([
               41,
+              58,
+              1,
+              42,
               34,
               36,
               47,
@@ -31652,9 +32211,6 @@ export const BundleDefinition = {
               105,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -32343,6 +32899,9 @@ export const BundleDefinition = {
           578365826: [
             Buffer.from([
               40,
+              58,
+              1,
+              42,
               34,
               35,
               47,
@@ -32380,9 +32939,6 @@ export const BundleDefinition = {
               101,
               97,
               100,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -33084,6 +33640,9 @@ export const BundleDefinition = {
           578365826: [
             Buffer.from([
               42,
+              58,
+              1,
+              42,
               34,
               37,
               47,
@@ -33123,9 +33682,6 @@ export const BundleDefinition = {
               101,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -33781,6 +34337,9 @@ export const TenancyDefinition = {
           578365826: [
             Buffer.from([
               23,
+              58,
+              1,
+              42,
               34,
               18,
               47,
@@ -33801,9 +34360,6 @@ export const TenancyDefinition = {
               97,
               116,
               101,
-              58,
-              1,
-              42,
             ]),
           ],
         },
@@ -34922,6 +35478,9 @@ export const TenancyDefinition = {
           578365826: [
             Buffer.from([
               21,
+              58,
+              1,
+              42,
               34,
               16,
               47,
@@ -34940,9 +35499,6 @@ export const TenancyDefinition = {
               105,
               115,
               116,
-              58,
-              1,
-              42,
             ]),
           ],
         },
