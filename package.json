@@ -1,16 +1,22 @@
 {
   "name": "@permify/permify-node",
-  "version": "1.0.8",
+  "version": "1.1.3",
   "description": "Permify Node Client",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "repository": "https://github.com/Permify/permify-node",
   "private": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "run-instance": "scripts/run-instance.sh",
     "run-test": "ts-node node_modules/jasmine/bin/jasmine --config=jasmine.json",
     "lint": "eslint \"src/**/*.ts\"",
-    "build": "rm -rf ./dist && npx tsc"
+    "build": "rm -rf ./dist && npx tsc && cp -r src/grpc/generated dist/src/grpc/",
+    "buf:generate": "buf generate"
   },
   "keywords": [
     "permissions",
@@ -24,18 +30,22 @@
   "author": "permify",
   "license": "Apache-2.0",
   "dependencies": {
-    "@bufbuild/protobuf": "^2.1.0",
+    "@bufbuild/protobuf": "^2.0.0",
+    "@grpc/grpc-js": "^1.9.0",
     "nice-grpc": "^2.1.9",
-    "ts-proto": "^2.7.7"
+    "nice-grpc-common": "^2.0.0",
+    "long": "^5.2.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.25.0",
     "@typescript-eslint/parser": "^8.25.0",
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
     "jasmine": "^5.2.0",
-    "jest": "^30.0.0",
-    "ts-jest": "^29.2.4"
+    "ts-node": "^10.9.2",
+    "ts-proto": "^2.6.1",
+    "typescript": "^5.0.0"
   }
 }

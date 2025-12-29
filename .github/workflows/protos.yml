@@ -1,96 +1,79 @@
-name: Overwrite Proto Directory
+name: Update Permify Proto Definitions
 
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  copy-proto:
-    permissions:
-      contents: write  # for Git to git push
+  update-protos:
+    name: Update Proto Definitions
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
-    - name: Harden Runner
-      uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
-      with:
-        egress-policy: audit
+       # Security hardening for GitHub Actions runner
+       - name: Harden Runner
+         uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+         with:
+           egress-policy: audit
 
-    - name: Checkout Repository
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+       # Checkout the current repository
+       - name: Checkout Repository
+         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
-    - name: Run Bash Script to Overwrite Proto Directory
-      run: |
-        #!/bin/bash
-        REPO_URL="https://github.com/Permify/permify.git"
-        TEMP_DIR="temp_dir"
-        TARGET_DIR="proto"
+       # Setup Node.js
+       - name: Setup Node.js
+         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+         with:
+           cache-dependency-path: ./yarn.lock
+           cache: "yarn"
+           node-version: 20
 
-        # Clone the repository to a temporary directory
-        git clone --depth=1 $REPO_URL $TEMP_DIR
+       # Install dependencies (needed for ts-proto plugin)
+       - name: Install Dependencies
+         uses: bahmutov/npm-install@3e063b974f0d209807684aa23e534b3dde517fd9 # v1.11.2
+         with:
+           useLockFile: false
 
-        # Check if the clone was successful
-        if [ $? -ne 0 ]; then
-            echo "Failed to clone repository."
-            exit 1
-        fi
+       # Setup Buf CLI - will pull proto from buf.build/permifyco/permify
+       - name: Setup Buf
+         uses: bufbuild/buf-action@8f4a1456a0ab6a1eb80ba68e53832e6fcfacc16c # v1.3.0
+         with:
+           setup_only: true
+           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-        # Remove the existing proto directory if it exists
-        if [ -d "$TARGET_DIR" ]; then
-            rm -rf $TARGET_DIR
-        fi
+       # Generate TypeScript code from Buf Schema Registry
+       - name: Generate Code with Buf
+         run: yarn buf:generate
 
-        # Create the target directory and copy the specific directory to the desired location
-        mkdir -p $TARGET_DIR
-        cp -r $TEMP_DIR/proto/* $TARGET_DIR
+       # Check if there are any changes
+       - name: Check for changes
+         id: verify-changes
+         run: |
+           if git diff --quiet; then
+             echo "has_changes=false" >> $GITHUB_OUTPUT
+             echo "No changes detected"
+           else
+             echo "has_changes=true" >> $GITHUB_OUTPUT
+             echo "Changes detected, will create PR"
+           fi
 
-        # Check if the copy was successful
-        if [ $? -ne 0 ]; then
-            echo "Failed to copy the directory."
-            # Clean up the temporary repository directory
-            rm -rf $TEMP_DIR
-            exit 1
-        fi
-
-        # Clean up the temporary repository directory
-        rm -rf $TEMP_DIR
-
-        echo "Successfully copied the proto directory to $TARGET_DIR."
-    
-    - name: Install Node.js and Dependencies
-      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-      with:
-        node-version: '18' 
-          
-    - name: Install Buf
-      run: |
-        # Download and install buf
-        wget https://github.com/bufbuild/buf/releases/download/v1.7.0/buf-Linux-x86_64 -O /usr/local/bin/buf
-        chmod +x /usr/local/bin/buf
-        buf --version
-        
-    - name: Generate Code with Buf
-      run: |
-        # Navigate to the proto directory and run buf generate
-        npm install ts-proto
-        buf generate
-
-    - name: Add and Commit Changes
-      run: |
-        git config --global user.name 'GitHub Actions Bot'
-        git config --global user.email '<>'
-        git add src/grpc/generated package-lock.json package.json proto/
-        if git diff-index --quiet HEAD; then
-          echo "No changes to commit"
-        else
-          git commit -m "Update generated sdk directory with latest changes"
-        fi
-
-    - name: Push Changes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        git push origin main
+       # Create Pull Request only if there are changes
+       - name: Create Pull Request
+         if: steps.verify-changes.outputs.has_changes == 'true'
+         uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
+           commit-message: "chore(proto): update generated SDK with latest Permify definitions"
+           title: "chore(proto): update generated SDK with latest Permify definitions"
+           branch: proto-update/permify-latest
+           delete-branch: true
+           base: main
+           labels: |
+             dependencies
+             automated
